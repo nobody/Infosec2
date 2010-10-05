@@ -99,9 +99,9 @@ int main(int argc, char** argv){
     int current = encrypt(MAXVAL, buffer, filelen);
     fprintf(stderr, "Currently have: %d, need: %d\n", current, WANT);
     int tmplen = filelen;
-    while(current != WANT){
-        buffer[tmplen] = ' ';
-        tmplen++;
+    while(current != WANT && tmplen < FILESZ-2){
+        buffer[tmplen++] = ' ';
+        buffer[tmplen++] = '\x08';
         current = encrypt(MAXVAL, buffer, tmplen);
         fprintf(stderr, "Currently have: %d, need: %d\n", current, WANT);
     }

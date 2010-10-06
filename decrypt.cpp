@@ -57,7 +57,6 @@ int encrypt(char* key, int keylen, char* filename){
         int x2 = key[x2i];
 
         int x = (x1^x2)^buffer[0][j];
-        buffer[0][j] = (char)x;
         printf("%c", (char)x); 
     }
     for (int i = 1; i < numRows; ++i){
@@ -75,7 +74,6 @@ int encrypt(char* key, int keylen, char* filename){
             int x2 = key[x2i];
 
             int x = (x1^x2)^(buffer[i][j]);
-            buffer[i][j] = (char)x;
             printf("%c", (char)x); 
         }
     }

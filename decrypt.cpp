@@ -22,47 +22,39 @@ int encrypt(char* key, int keylen, char* filename){
         perror("fopen");
         return -1;
     }
+
+    // prepare the first row
+    char* row1 = new char[keylen+1];
+    strcpy(row1, key);
+
+    bool done = false;
     
-    int numRows = 0;
-    int padding = 0;
-    for (int i = 0; i < keylen; ++i){
-        int br = fread(buffer[i], sizeof(char), keylen, infile);
-        if (br == 0){
-            // no data on the row
-            break;
-        } else if (br == keylen){
-            // we got a full row!
-            numRows++;
-            continue;
-        } else {
-            // pad to full row
-            int pad = keylen - br;
-            memset(&(buffer[i][br]), 0x00, pad);
-            padding += pad;
-            numRows++;
+    while(!done){
+        int numRows = 0;
+        int padding = 0;
+        for (int i = 0; i < keylen; ++i){
+            int br = fread(buffer[i], sizeof(char), keylen, infile);
+            if (br == 0){
+                // no data on the row
+                done = true;
+                break;
+            } else if (br == keylen){
+                // we got a full row!
+                numRows++;
+                continue;
+            } else {
+                // pad to full row
+                int pad = keylen - br;
+                memset(&(buffer[i][br]), 0x00, pad);
+                padding += pad;
+                numRows++;
+                done = true;
+            }
         }
-    }
 
-    for (int j = 0; j < keylen; ++j){
-        int f = f1(0, j, key);
-        int g = g1(0, j, key);
-
-        int x1i = (j-f)%keylen;
-        int x2i = (j-g)%keylen;
-
-        x1i = (x1i < 0) ? -1*x1i : x1i;
-        x2i = (x2i < 0) ? -2*x2i : x2i;
-
-        int x1 = key[x1i];
-        int x2 = key[x2i];
-
-        int x = (x1^x2)^buffer[0][j];
-        printf("%c", (char)x); 
-    }
-    for (int i = 1; i < numRows; ++i){
         for (int j = 0; j < keylen; ++j){
-            int f = f1(i, j, key);
-            int g = g1(i, j, key);
+            int f = f1(0, j, key);
+            int g = g1(0, j, key);
 
             int x1i = (j-f)%keylen;
             int x2i = (j-g)%keylen;
@@ -70,12 +62,32 @@ int encrypt(char* key, int keylen, char* filename){
             x1i = (x1i < 0) ? -1*x1i : x1i;
             x2i = (x2i < 0) ? -2*x2i : x2i;
 
-            int x1 = key[x1i];
-            int x2 = key[x2i];
+            int x1 = row1[x1i];
+            int x2 = row1[x2i];
 
-            int x = (x1^x2)^(buffer[i][j]);
+            int x = (x1^x2)^buffer[0][j];
             printf("%c", (char)x); 
         }
+        for (int i = 1; i < numRows; ++i){
+            for (int j = 0; j < keylen; ++j){
+                int f = f1(i, j, key);
+                int g = g1(i, j, key);
+
+                int x1i = (j-f)%keylen;
+                int x2i = (j-g)%keylen;
+
+                x1i = (x1i < 0) ? -1*x1i : x1i;
+                x2i = (x2i < 0) ? -2*x2i : x2i;
+
+                int x1 = key[x1i];
+                int x2 = key[x2i];
+
+                int x = (x1^x2)^(buffer[i][j]);
+                printf("%c", (char)x); 
+            }
+        }
+        // set up new row1
+        memcpy(row1, buffer[numRows-1], keylen);
     }
 }
 

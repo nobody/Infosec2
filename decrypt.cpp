@@ -23,6 +23,10 @@ int encrypt(char* key, int keylen, char* filename){
     for (int i = 0; i < keylen+1; ++i)
         buffer[i] = new char[keylen];
 
+    char** buffer_clean = new char*[keylen+1];
+    for (int i = 0; i < keylen+1; ++i)
+        buffer_clean[i] = new char[keylen];
+
     FILE* infile = fopen(filename, "rb");
     if (!infile){
         perror("fopen");
@@ -79,10 +83,15 @@ int encrypt(char* key, int keylen, char* filename){
         if (done && numRows == 0)
             break;
 
+        // copy the buffer so we can reference it later
+        for (int i = 0; i < numRows; ++i)
+            for (int j = 0; j < keylen; ++j)
+                buffer_clean[i][j] = buffer[i][j];
+
         // horizontal pass
         for (int j = 0; j < keylen; ++j){
-            int f = f1(0, j, key, numRows);
-            int g = g1(0, j, key, numRows);
+            int f = f1(0, j, row1, numRows);
+            int g = g1(0, j, row1, numRows);
 
             int x1i = (j-f)%numRows;
             int x2i = (j-g)%numRows;
@@ -90,8 +99,8 @@ int encrypt(char* key, int keylen, char* filename){
             x1i = (x1i < 0) ? -1*x1i : x1i;
             x2i = (x2i < 0) ? -1*x2i : x2i;
 
-            int x1 = key[x1i];
-            int x2 = key[x2i];
+            int x1 = row1[x1i];
+            int x2 = row1[x2i];
 
             int x = (x1^x2)^buffer[j][0];
             buffer[j][0] = (char)x;
@@ -99,9 +108,9 @@ int encrypt(char* key, int keylen, char* filename){
         for (int i = 1; i < keylen; ++i){
             for (int j = 0; j < numRows; ++j){
                 char* prevcol = new char[numRows];
-                getCol(buffer, prevcol, numRows, i-1);
-                int f = f1(i, j, key, numRows);
-                int g = g1(i, j, key, numRows);
+                getCol(buffer_clean, prevcol, numRows, i-1);
+                int f = f1(i, j, prevcol, numRows);
+                int g = g1(i, j, prevcol, numRows);
 
                 int x1i = (j-f)%numRows;
                 int x2i = (j-g)%numRows;
@@ -109,18 +118,22 @@ int encrypt(char* key, int keylen, char* filename){
                 x1i = (x1i < 0) ? -1*x1i : x1i;
                 x2i = (x2i < 0) ? -1*x2i : x2i;
 
-                int x1 = key[x1i];
-                int x2 = key[x2i];
+                int x1 = prevcol[x1i];
+                int x2 = prevcol[x2i];
 
                 int x = (x1^x2)^(buffer[j][i]);
                 buffer[j][i] = (char)x;
             }
         }
+        // update the buffer so we can reference it later
+        for (int i = 0; i < numRows; ++i)
+            for (int j = 0; j < keylen; ++j)
+                buffer_clean[i][j] = buffer[i][j];
 
         // Vertical pass
         for (int j = 0; j < keylen; ++j){
-            int f = f1(0, j, key, keylen);
-            int g = g1(0, j, key, keylen);
+            int f = f1(0, j, row1, keylen);
+            int g = g1(0, j, row1, keylen);
 
             int x1i = (j-f)%keylen;
             int x2i = (j-g)%keylen;
@@ -128,16 +141,16 @@ int encrypt(char* key, int keylen, char* filename){
             x1i = (x1i < 0) ? -1*x1i : x1i;
             x2i = (x2i < 0) ? -1*x2i : x2i;
 
-            int x1 = key[x1i];
-            int x2 = key[x2i];
+            int x1 = row1[x1i];
+            int x2 = row1[x2i];
 
             int x = (x1^x2)^buffer[0][j];
             buffer[0][j] = (char)x;
         }
         for (int i = 1; i < numRows; ++i){
             for (int j = 0; j < keylen; ++j){
-                int f = f1(i, j, key, keylen);
-                int g = g1(i, j, key, keylen);
+                int f = f1(i, j, buffer_clean[i-1], keylen);
+                int g = g1(i, j, buffer_clean[i-1], keylen);
 
                 int x1i = (j-f)%keylen;
                 int x2i = (j-g)%keylen;
@@ -145,8 +158,8 @@ int encrypt(char* key, int keylen, char* filename){
                 x1i = (x1i < 0) ? -1*x1i : x1i;
                 x2i = (x2i < 0) ? -1*x2i : x2i;
 
-                int x1 = key[x1i];
-                int x2 = key[x2i];
+                int x1 = buffer_clean[i-1][x1i];
+                int x2 = buffer_clean[i-1][x2i];
 
                 int x = (x1^x2)^(buffer[i][j]);
                 buffer[i][j] = (char)x;
@@ -154,7 +167,7 @@ int encrypt(char* key, int keylen, char* filename){
         }
 
         // set up new row1
-        //memcpy(row1, buffer[numRows-1], keylen);
+        //memcpy(row1, buffer_clean[numRows-1], keylen);
 
 
         // Remove padding and paddingLength

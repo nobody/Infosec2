@@ -60,7 +60,7 @@ int encrypt(char* key, int keylen, char* filename){
             int x2i = (j-g)%keylen;
 
             x1i = (x1i < 0) ? -1*x1i : x1i;
-            x2i = (x2i < 0) ? -2*x2i : x2i;
+            x2i = (x2i < 0) ? -1*x2i : x2i;
 
             int x1 = row1[x1i];
             int x2 = row1[x2i];
@@ -77,7 +77,7 @@ int encrypt(char* key, int keylen, char* filename){
                 int x2i = (j-g)%keylen;
 
                 x1i = (x1i < 0) ? -1*x1i : x1i;
-                x2i = (x2i < 0) ? -2*x2i : x2i;
+                x2i = (x2i < 0) ? -1*x2i : x2i;
 
                 int x1 = key[x1i];
                 int x2 = key[x2i];

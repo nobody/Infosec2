@@ -4,12 +4,18 @@
 #include <stdlib.h>
 
 
-int f1(int i, int j, char* key){
-    return (key[i] ^ key[j]) % strlen(key);
+int f1(int i, int j, char* key, int keylen){
+    return (key[i] ^ key[j]) % keylen;
 }
 
-int g1(int i, int j, char* key){
-    return (key[i] * key[j]) % strlen(key);
+int g1(int i, int j, char* key, int keylen){
+    return (key[i] * key[j]) % keylen;
+}
+
+char* getCol( char** buf, char* out, int numrows, int colidx){
+    for (int i = 0; i < numrows; ++i){
+        out[i] = buf[i][colidx];
+    }
 }
 
 int encrypt(char* key, int keylen, char* filename){
@@ -51,10 +57,13 @@ int encrypt(char* key, int keylen, char* filename){
                 done = true;
             }
         }
+        if (done && numRows == 0)
+            break;
 
+        // Vertical Pass
         for (int j = 0; j < keylen; ++j){
-            int f = f1(0, j, key);
-            int g = g1(0, j, key);
+            int f = f1(0, j, key, keylen);
+            int g = g1(0, j, key, keylen);
 
             int x1i = (j-f)%keylen;
             int x2i = (j-g)%keylen;
@@ -62,17 +71,17 @@ int encrypt(char* key, int keylen, char* filename){
             x1i = (x1i < 0) ? -1*x1i : x1i;
             x2i = (x2i < 0) ? -1*x2i : x2i;
 
-            int x1 = row1[x1i];
-            int x2 = row1[x2i];
+            int x1 = key[x1i];
+            int x2 = key[x2i];
 
             int x = (x1^x2)^buffer[0][j];
             buffer[0][j] = (char)x;
-            printf("%c", (char)x); 
+            //printf("%c", (char)x); 
         }
         for (int i = 1; i < numRows; ++i){
             for (int j = 0; j < keylen; ++j){
-                int f = f1(i, j, key);
-                int g = g1(i, j, key);
+                int f = f1(i, j, key, keylen);
+                int g = g1(i, j, key, keylen);
 
                 int x1i = (j-f)%keylen;
                 int x2i = (j-g)%keylen;
@@ -85,11 +94,56 @@ int encrypt(char* key, int keylen, char* filename){
 
                 int x = (x1^x2)^(buffer[i][j]);
                 buffer[i][j] = (char)x;
-                printf("%c", (char)x); 
+                //printf("%c", (char)x); 
             }
         }
+
+        // horizontal pass
+        for (int j = 0; j < keylen; ++j){
+            int f = f1(0, j, key, numRows);
+            int g = g1(0, j, key, numRows);
+
+            int x1i = (j-f)%numRows;
+            int x2i = (j-g)%numRows;
+
+            x1i = (x1i < 0) ? -1*x1i : x1i;
+            x2i = (x2i < 0) ? -1*x2i : x2i;
+
+            int x1 = key[x1i];
+            int x2 = key[x2i];
+
+            int x = (x1^x2)^buffer[j][0];
+            buffer[j][0] = (char)x;
+        }
+        for (int i = 1; i < keylen; ++i){
+            for (int j = 0; j < numRows; ++j){
+                char* prevcol = new char[numRows];
+                getCol(buffer, prevcol, numRows, i-1);
+                int f = f1(i, j, key, numRows);
+                int g = g1(i, j, key, numRows);
+
+                int x1i = (j-f)%numRows;
+                int x2i = (j-g)%numRows;
+
+                x1i = (x1i < 0) ? -1*x1i : x1i;
+                x2i = (x2i < 0) ? -1*x2i : x2i;
+
+                int x1 = key[x1i];
+                int x2 = key[x2i];
+
+                int x = (x1^x2)^(buffer[j][i]);
+                buffer[j][i] = (char)x;
+            }
+        }
+
+        for (int i = 0; i < numRows; ++i){
+            for (int j = 0; j < keylen; ++j)
+                printf("%c", buffer[i][j]);
+        }
+
         // set up new row1
-        memcpy(row1, buffer[numRows-1], keylen);
+        //memcpy(row1, buffer[numRows-1], keylen);
+
     }
 }
 

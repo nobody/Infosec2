@@ -19,9 +19,9 @@ char* getCol( char** buf, char* out, int numrows, int colidx){
 }
 
 int encrypt(char* key, int keylen, char* filename){
-    char** buffer = new char*[keylen];
-    for (int i = 0; i < keylen; ++i)
-        buffer[i] = new char[keylen+1];
+    char** buffer = new char*[keylen+1];
+    for (int i = 0; i < keylen+1; ++i)
+        buffer[i] = new char[keylen];
 
     FILE* infile = fopen(filename, "r");
     if (!infile){
@@ -35,9 +35,9 @@ int encrypt(char* key, int keylen, char* filename){
 
     bool done = false;
     
+    int padding = 0;
     while(!done){
         int numRows = 0;
-        int padding = 0;
         for (int i = 0; i < keylen; ++i){
             int br = fread(buffer[i], sizeof(char), keylen, infile);
             if (br == 0){
@@ -55,6 +55,7 @@ int encrypt(char* key, int keylen, char* filename){
                 padding += pad;
                 numRows++;
                 done = true;
+                break;
             }
         }
         if (done && numRows == 0)
@@ -98,13 +99,6 @@ int encrypt(char* key, int keylen, char* filename){
             }
         }
 
-        /*
-        for (int i = 0; i < numRows; ++i){
-            for (int j = 0; j < keylen; ++j)
-                printf("%c", buffer[i][j]);
-        }
-        */
-
         // Vertical pass
         for (int j = 0; j < keylen; ++j){
             int f = f1(0, j, key, keylen);
@@ -120,7 +114,7 @@ int encrypt(char* key, int keylen, char* filename){
             int x2 = key[x2i];
 
             int x = (x1^x2)^buffer[0][j];
-            printf("%c", (char)x); 
+            buffer[0][j] = (char)x;
         }
         for (int i = 1; i < numRows; ++i){
             for (int j = 0; j < keylen; ++j){
@@ -137,13 +131,33 @@ int encrypt(char* key, int keylen, char* filename){
                 int x2 = key[x2i];
 
                 int x = (x1^x2)^(buffer[i][j]);
-                printf("%c", (char)x); 
+                buffer[i][j] = (char)x;
             }
         }
 
         // set up new row1
         //memcpy(row1, buffer[numRows-1], keylen);
+
+
+        // Remove padding and paddingLength
+        int pad = 0;
+        if (done){
+            pad = buffer[numRows-1][0] << 8;
+            pad |= buffer[numRows-1][1];
+            for (int i = 0; i < numRows-2; ++i){
+                for (int j = 0; j < keylen; ++j)
+                    printf("%c", buffer[i][j]);
+            }
+            for (int i = 0; i < keylen-pad; ++i)
+                printf("%c", buffer[numRows-2][i]);
+        } else {
+            for (int i = 0; i < numRows; ++i){
+                for (int j = 0; j < keylen; ++j)
+                    printf("%c", buffer[i][j]);
+            }
+        }
     }
+
 }
 
 

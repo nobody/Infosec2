@@ -19,9 +19,9 @@ char* getCol( char** buf, char* out, int numrows, int colidx){
 }
 
 int encrypt(char* key, int keylen, char* filename){
-    char** buffer = new char*[keylen];
-    for (int i = 0; i < keylen; ++i)
-        buffer[i] = new char[keylen+1];
+    char** buffer = new char*[keylen+1];
+    for (int i = 0; i < keylen+1; ++i)
+        buffer[i] = new char[keylen];
 
     FILE* infile = fopen(filename, "r");
     if (!infile){
@@ -35,9 +35,9 @@ int encrypt(char* key, int keylen, char* filename){
 
     bool done = false;
     
+    int padding = 0;
     while(!done){
         int numRows = 0;
-        int padding = 0;
         for (int i = 0; i < keylen; ++i){
             int br = fread(buffer[i], sizeof(char), keylen, infile);
             if (br == 0){
@@ -55,6 +55,13 @@ int encrypt(char* key, int keylen, char* filename){
                 padding += pad;
                 numRows++;
                 done = true;
+
+                // add padding_info
+                numRows++;
+                buffer[i+1][0] = padding / 256;
+                buffer[i+1][1] = padding % 256;
+                memset(&(buffer[i+1][2]), 0x0a, keylen-2);
+                break;
             }
         }
         if (done && numRows == 0)
@@ -145,6 +152,9 @@ int encrypt(char* key, int keylen, char* filename){
         //memcpy(row1, buffer[numRows-1], keylen);
 
     }
+
+    //Write the padding length
+
 }
 
 

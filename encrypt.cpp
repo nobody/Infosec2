@@ -23,7 +23,7 @@ int encrypt(char* key, int keylen, char* filename){
     for (int i = 0; i < keylen+1; ++i)
         buffer[i] = new char[keylen];
 
-    FILE* infile = fopen(filename, "r");
+    FILE* infile = fopen(filename, "rb");
     if (!infile){
         perror("fopen");
         return -1;
@@ -43,6 +43,8 @@ int encrypt(char* key, int keylen, char* filename){
             if (br == 0){
                 // no data on the row
                 done = true;
+                //fprintf(stderr, "We have an empty row\n");
+                
                 break;
             } else if (br == keylen){
                 // we got a full row!
@@ -50,20 +52,33 @@ int encrypt(char* key, int keylen, char* filename){
                 continue;
             } else {
                 // pad to full row
+                //fprintf(stderr, "Need to pad the line\n");
                 int pad = keylen - br;
                 memset(&(buffer[i][br]), 0x00, pad);
                 padding += pad;
                 numRows++;
                 done = true;
 
-                // add padding_info
-                numRows++;
-                buffer[i+1][0] = padding / 256;
-                buffer[i+1][1] = padding % 256;
-                memset(&(buffer[i+1][2]), 0x0a, keylen-2);
                 break;
             }
         }
+        // check if we're at the end
+        long fpos = ftell(infile);
+        fseek(infile, 0, SEEK_END);
+        //fprintf(stderr, "fpos=%d, ftell(infile)==%d\n", fpos, ftell(infile));
+        if (ftell(infile) == fpos){
+            // this has the padding length, add to the current buffer
+            //fprintf(stderr, "Reached end of file\n");
+            done = true;
+            
+            // add padding_info
+            numRows++;
+            buffer[numRows-1][0] = padding / 256;
+            buffer[numRows-1][1] = padding % 256;
+            memset(&(buffer[numRows-1][2]), 0x0a, keylen-2);
+        }
+        fseek(infile, fpos, SEEK_SET);
+        
         if (done && numRows == 0)
             break;
 

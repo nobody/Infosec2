@@ -23,7 +23,7 @@ int encrypt(char* key, int keylen, char* filename){
     for (int i = 0; i < keylen+1; ++i)
         buffer[i] = new char[keylen];
 
-    FILE* infile = fopen(filename, "r");
+    FILE* infile = fopen(filename, "rb");
     if (!infile){
         perror("fopen");
         return -1;
@@ -56,6 +56,24 @@ int encrypt(char* key, int keylen, char* filename){
                 numRows++;
                 done = true;
                 break;
+            }
+        }
+        if (numRows == keylen){
+            // check if there is only 1 line left
+            long fpos = ftell(infile);
+            fseek(infile, 0, SEEK_END);
+            //fprintf(stderr, "fpos=%d, ftell(infile)==%d\n", fpos, ftell(infile));
+            if (ftell(infile) == fpos + keylen){
+                // this has the padding length, add to the current buffer
+                //fprintf(stderr, "One line remaining\n");
+                numRows++;
+                fseek(infile, fpos, SEEK_SET);
+                int br = fread(buffer[numRows-1], sizeof(char), keylen, infile);
+                done = true;
+            } else if (fpos == ftell(infile)){
+                done = true;
+            } else {
+                fseek(infile, fpos, SEEK_SET);
             }
         }
         if (done && numRows == 0)
@@ -142,6 +160,7 @@ int encrypt(char* key, int keylen, char* filename){
         // Remove padding and paddingLength
         int pad = 0;
         if (done){
+            //fprintf(stderr, "Done\n");
             pad = buffer[numRows-1][0] << 8;
             pad |= buffer[numRows-1][1];
             for (int i = 0; i < numRows-2; ++i){

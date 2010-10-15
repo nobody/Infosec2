@@ -31,13 +31,6 @@ int encrypt(int max_value, char* file, int filelen)
     int fd;
     int last;
 
-/* open files */
-/*  
-    if ((fd = open(plaintext_file, O_RDONLY)) < 0) {
-        printf("Error: open for input file\n");
-        return -1;
-    }
-*/
 
     last = 13;
     sum = 0;
@@ -97,13 +90,13 @@ int main(int argc, char** argv){
 
 
     int current = encrypt(MAXVAL, buffer, filelen);
-    fprintf(stderr, "Currently have: %d, need: %d\n", current, WANT);
+    //fprintf(stderr, "Currently have: %d, need: %d\n", current, WANT);
     int tmplen = filelen;
     while(current != WANT && tmplen < FILESZ-2){
         buffer[tmplen++] = ' ';
         buffer[tmplen++] = '\x08';
         current = encrypt(MAXVAL, buffer, tmplen);
-        fprintf(stderr, "Currently have: %d, need: %d\n", current, WANT);
+        //fprintf(stderr, "Currently have: %d, need: %d\n", current, WANT);
     }
 
     printf("%s", buffer);

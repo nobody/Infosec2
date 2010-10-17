@@ -47,7 +47,6 @@ int encrypt(char* key, int keylen, char* filename){
             if (br == 0){
                 // no data on the row
                 done = true;
-                //fprintf(stderr, "We have an empty row\n");
                 
                 break;
             } else if (br == keylen){
@@ -56,7 +55,6 @@ int encrypt(char* key, int keylen, char* filename){
                 continue;
             } else {
                 // pad to full row
-                //fprintf(stderr, "Need to pad the line\n");
                 int pad = keylen - br;
                 memset(&(buffer[i][br]), 0x00, pad);
                 padding += pad;
@@ -72,7 +70,6 @@ int encrypt(char* key, int keylen, char* filename){
         //fprintf(stderr, "fpos=%d, ftell(infile)==%d\n", fpos, ftell(infile));
         if (ftell(infile) == fpos){
             // this has the padding length, add to the current buffer
-            //fprintf(stderr, "Reached end of file\n");
             done = true;
             
             // add padding_info
@@ -137,6 +134,7 @@ int encrypt(char* key, int keylen, char* filename){
         // horizontal pass
         for (int j = 0; j < keylen; ++j){
             int x1=0;
+            // get the sum of the key characters
             for (int i = 0; i < numRows; ++i){
                 x1 += row1[i];
             }
@@ -145,27 +143,28 @@ int encrypt(char* key, int keylen, char* filename){
             buffer[j][0] = (char)x;
         }
         for (int i = 1; i < keylen; ++i){
+            char* prevcol = new char[numRows];
+            getCol(buffer_clean, prevcol, numRows, i-1);
+            int x1=0;
+            // Get the sum of the previous column
+            for (int k = 0; k < numRows; ++k){
+                x1 += prevcol[k];
+            }
+
             for (int j = 0; j < numRows; ++j){
-                char* prevcol = new char[numRows];
-                getCol(buffer_clean, prevcol, numRows, i-1);
-                int x1=0;
-                for (int k = 0; k < numRows; ++k){
-                    x1 += prevcol[k];
-                }
 
                 int x = ((x1)+(buffer[j][i])) % 256;
                 buffer[j][i] = (char)x;
             }
+
+            delete[] prevcol;
         }
 
+        // print the contents of the buffer
         for (int i = 0; i < numRows; ++i){
             for (int j = 0; j < keylen; ++j)
                 printf("%c", buffer[i][j]);
         }
-
-        // set up new row1
-        //memcpy(row1, buffer[numRows-1], keylen);
-
     }
 }
 

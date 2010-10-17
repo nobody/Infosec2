@@ -99,17 +99,20 @@ int encrypt(char* key, int keylen, char* filename){
             buffer[j][0] = (char)x;
         }
         for (int i = 1; i < keylen; ++i){
+            char* prevcol = new char[numRows];
+            getCol(buffer, prevcol, numRows, i-1);
+            int x1=0;
+            for (int k = 0; k < numRows; ++k){
+                x1 += prevcol[k];
+            }
+
             for (int j = 0; j < numRows; ++j){
-                char* prevcol = new char[numRows];
-                getCol(buffer, prevcol, numRows, i-1);
-                int x1=0;
-                for (int k = 0; k < numRows; ++k){
-                    x1 += prevcol[k];
-                }
 
                 int x = (buffer[j][i] - x1) % 256;
                 buffer[j][i] = (char)x;
             }
+
+            delete[] prevcol;
         }
         // update the buffer so we can reference it later
         for (int i = 0; i < numRows; ++i)

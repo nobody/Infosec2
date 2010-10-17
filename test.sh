@@ -1,4 +1,15 @@
 KEY=AmzH81aL
+
+function enc {
+    FILE=$1
+    echo
+    echo "Encrypting $FILE"
+    ./enc $KEY "$FILE"> "$FILE.e"
+    echo "Decrypting $FILE"
+    ./dec $KEY "$FILE.e" > "$FILE.o"
+    diff "$FILE" "$FILE.o" -a
+}
+
 echo "Encrypting 25 chars"
 ./enc $KEY tmp.25 > tmp.25.e
 echo "Decrypting 25 chars"
@@ -21,25 +32,16 @@ diff tmp.20 tmp.20.o -a
 
 
 FILE=MSG1
-echo
-echo "Encrypting $FILE"
-./enc $KEY "$FILE"> "$FILE.e"
-echo "Decrypting $FILE"
-./dec $KEY "$FILE.e" > "$FILE.o"
-diff "$FILE" "$FILE.o" -a
+enc $FILE
 
 FILE=MSG2
-echo
-echo "Encrypting $FILE"
-./enc $KEY "$FILE"> "$FILE.e"
-echo "Decrypting $FILE"
-./dec $KEY "$FILE.e" > "$FILE.o"
-diff "$FILE" "$FILE.o" -a
+enc $FILE
 
 FILE=MSG3
-echo
-echo "Encrypting $FILE"
-./enc $KEY "$FILE"> "$FILE.e"
-echo "Decrypting $FILE"
-./dec $KEY "$FILE.e" > "$FILE.o"
-diff "$FILE" "$FILE.o" -a
+enc $FILE
+
+FILE=ass1.pdf.gz
+enc $FILE
+
+FILE=pipetalk
+enc $FILE
